@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import LiveGraph from '../components/LiveGraph';
-import { AlertTriangle, Plus, ShieldAlert, CheckCircle, Clock, MapPin } from 'lucide-react';
+import { AlertTriangle, Plus, MapPin, RefreshCw } from 'lucide-react';
 
 export default function Incidents({ user }) {
   const [incidents, setIncidents] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
-  // Form State
   const [type, setType] = useState('Wind Speed Spike');
   const [riskLevel, setRiskLevel] = useState('Warning');
   const [location, setLocation] = useState('Chennai Airspace');
@@ -16,7 +15,7 @@ export default function Incidents({ user }) {
   const fetchIncidents = async () => {
     try {
       const res = await axios.get('/api/incidents');
-      setIncidents(res.data);
+      setIncidents(res.data || []);
     } catch (e) {
       console.error(e);
     }
@@ -38,6 +37,18 @@ export default function Incidents({ user }) {
       });
       setShowModal(false);
       setDescription('');
+      fetchIncidents();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Admin 1-Click Status Cycle
+  const handleStatusChange = async (inc) => {
+    const order = ['Active', 'Investigating', 'Resolved'];
+    const nextStatus = order[(order.indexOf(inc.status) + 1) % order.length];
+    try {
+      await axios.post('/api/incidents/status', { id: inc.id, status: nextStatus });
       fetchIncidents();
     } catch (e) {
       console.error(e);
@@ -70,12 +81,19 @@ export default function Incidents({ user }) {
       {/* Incident Trends Chart */}
       <div className="glass-sky-card p-6 rounded-3xl space-y-3">
         <h3 className="text-sm font-extrabold text-sky-900">Incident Severity Trends</h3>
-        <LiveGraph data={[12, 15, 8, 22, 19, 28, 14, 32, 20]} color="#f59e0b" height={140} />
+        <LiveGraph data={[12, 15, 8, 22, 19, 28, 14, 32, incidents.length * 5]} color="#f59e0b" height={140} />
       </div>
 
       {/* Incidents Table */}
       <div className="glass-sky-card rounded-3xl p-6 overflow-hidden">
-        <h3 className="text-base font-extrabold text-sky-900 mb-4">Active Incident Log</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-extrabold text-sky-900">Active Incident Log</h3>
+          {user?.role === 'admin' && (
+            <span className="text-[11px] font-bold text-amber-600">
+              ⚡ Admin Mode: Click status badge to update
+            </span>
+          )}
+        </div>
         
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -109,9 +127,32 @@ export default function Incidents({ user }) {
                   </td>
                   <td className="py-3.5 px-4 text-sky-600">{inc.filedBy || 'System'}</td>
                   <td className="py-3.5 px-4">
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-extrabold">
-                      {inc.status}
-                    </span>
+                    {user?.role === 'admin' ? (
+                      <button
+                        onClick={() => handleStatusChange(inc)}
+                        title="Click to cycle status"
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold inline-flex items-center gap-1 transition-all hover:scale-105 ${
+                          inc.status === 'Resolved'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : inc.status === 'Investigating'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        <RefreshCw className="w-2.5 h-2.5" />
+                        {inc.status}
+                      </button>
+                    ) : (
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                        inc.status === 'Resolved'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : inc.status === 'Investigating'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {inc.status}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
