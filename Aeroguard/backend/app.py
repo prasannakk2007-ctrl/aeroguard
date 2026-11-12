@@ -309,6 +309,19 @@ def handle_incidents():
         return jsonify(inc), 201
     return jsonify(db['incidents']), 200
 
+@app.route('/api/incidents/status', methods=['POST'])
+def update_incident_status():
+    req = request.json or {}
+    inc_id = req.get('id')
+    new_status = req.get('status')
+    db = read_db()
+    for inc in db['incidents']:
+        if inc['id'] == inc_id:
+            inc['status'] = new_status
+            write_db(db)
+            return jsonify({"message": "Status updated", "incident": inc}), 200
+    return jsonify({"error": "Incident not found"}), 404
+
 @app.route('/api/accidents', methods=['GET', 'POST'])
 def handle_accidents():
     db = read_db()
