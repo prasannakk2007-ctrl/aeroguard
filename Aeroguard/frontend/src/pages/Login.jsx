@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { CloudRain, User, Lock, Mail, ShieldAlert, ArrowRight, UserPlus, CheckCircle2 } from 'lucide-react';
+import { CloudRain, User, Lock, Mail, ShieldAlert, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 export default function Login({ setUser }) {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ export default function Login({ setUser }) {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -25,7 +26,7 @@ export default function Login({ setUser }) {
 
     try {
       if (isSignup) {
-        const res = await axios.post('/api/signup', { name, email: username, password });
+        await axios.post('/api/signup', { name, email: username, password });
         setSuccess('Account created successfully! Please sign in.');
         setIsSignup(false);
         setPassword('');
@@ -150,13 +151,21 @@ export default function Login({ setUser }) {
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-3 text-sky-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full glass-sky-input pl-10 pr-4 py-2.5 rounded-2xl text-xs font-medium"
+                className="w-full glass-sky-input pl-10 pr-10 py-2.5 rounded-2xl text-xs font-medium"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute right-3.5 top-2.5 text-sky-400 hover:text-sky-600 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
