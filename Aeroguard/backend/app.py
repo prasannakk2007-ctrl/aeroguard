@@ -115,7 +115,8 @@ def init_db():
                     "severity": "High",
                     "status": "Resolved",
                     "location": "Tiruchirappalli Airport",
-                    "description": "Engine 1 flameout during climb phase due to thermal inversion."
+                    "description": "Engine 1 flameout during climb phase due to thermal inversion.",
+                    "filedBy": "Prasanna K"
                 },
                 {
                     "id": "AC-1002",
@@ -125,7 +126,8 @@ def init_db():
                     "severity": "Critical",
                     "status": "Investigating",
                     "location": "Chennai International Airport",
-                    "description": "Aircraft experienced hard landing due to sudden wind shear."
+                    "description": "Aircraft experienced hard landing due to sudden wind shear.",
+                    "filedBy": "Keerthi V"
                 }
             ],
             "tickets": []
@@ -142,7 +144,7 @@ def write_db(data):
     with open(DB_FILE, 'w') as f:
         json.dump(data, f, indent=4)
 
-# Live Background Telemetry Streaming Loop
+# Live Background Telemetry Streaming Loop (Pre-seeded for instant graph)
 telemetry_history = [
     {
         "temperature": round(random.uniform(25.0, 30.0), 1),
@@ -155,6 +157,7 @@ telemetry_history = [
     }
     for _ in range(10)
 ]
+
 current_telemetry = {
     "temperature": 28.4,
     "wind_speed": 14.2,
@@ -220,7 +223,6 @@ def login():
 
     db = read_db()
     for user in db['users']:
-        # Match username or any email in gmail list
         if (user.get('username') == username or username in user.get('gmail', [])) and user.get('password') == password:
             if role_requested == 'admin' and user.get('role') != 'admin':
                 return jsonify({"error": "Unauthorized! Account is not an Admin."}), 403
@@ -307,9 +309,25 @@ def handle_incidents():
         return jsonify(inc), 201
     return jsonify(db['incidents']), 200
 
-@app.route('/api/accidents', methods=['GET'])
-def get_accidents():
+@app.route('/api/accidents', methods=['GET', 'POST'])
+def handle_accidents():
     db = read_db()
+    if request.method == 'POST':
+        req = request.json or {}
+        new_acc = {
+            "id": f"AC-{random.randint(1003, 9999)}",
+            "date": datetime.now().strftime("%d %b %Y"),
+            "flightNo": req.get('flightNo', 'AI-000'),
+            "type": req.get('type', 'Weather Hazard'),
+            "severity": req.get('severity', 'High'),
+            "status": "Investigating",
+            "location": req.get('location', 'Regional Airport'),
+            "description": req.get('description', 'User reported aviation accident.'),
+            "filedBy": req.get('filedBy', 'User')
+        }
+        db['accidents'].insert(0, new_acc)
+        write_db(db)
+        return jsonify(new_acc), 201
     return jsonify(db['accidents']), 200
 
 @app.route('/api/help/tickets', methods=['GET', 'POST'])
