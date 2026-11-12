@@ -143,7 +143,18 @@ def write_db(data):
         json.dump(data, f, indent=4)
 
 # Live Background Telemetry Streaming Loop
-telemetry_history = []
+telemetry_history = [
+    {
+        "temperature": round(random.uniform(25.0, 30.0), 1),
+        "wind_speed": round(random.uniform(10.0, 16.0), 1),
+        "visibility": round(random.uniform(8.0, 9.8), 1),
+        "pressure": round(random.uniform(1011.0, 1015.0), 1),
+        "risk_score": random.randint(10, 22),
+        "anomaly": False,
+        "timestamp": datetime.now().strftime("%H:%M:%S")
+    }
+    for _ in range(10)
+]
 current_telemetry = {
     "temperature": 28.4,
     "wind_speed": 14.2,
